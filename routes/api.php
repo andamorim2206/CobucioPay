@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -11,4 +12,8 @@ Route::get('/ping', function () {
 
 Route::post('/api/cadastro', [UserController::class, 'actionCreate']);
 Route::post('/api/login', [AuthController::class, 'actionLogin']);
-Route::post('/api/logout', [AuthController::class, 'actionLogout']);
+
+Route::middleware('auth:api')->group(function () {
+    Route::post('/api/logout', [AuthController::class, 'actionLogout']);
+    Route::patch('/api/transferencia', [TransactionController::class, 'actionTransfer']);
+});

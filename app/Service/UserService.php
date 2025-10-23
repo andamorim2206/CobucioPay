@@ -55,4 +55,14 @@ class UserService
     {
         return $this->walletService;
     }
+
+    public function findUserByToken(string $token): UserService
+    {
+        return $this->repository->findUserByToken($token);
+    }
+
+    public function findUserByEmail(string $email): UserService
+    {
+        return $this->repository->findUserByEmail($email);
+    }
 }
