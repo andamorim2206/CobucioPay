@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\UserRepository;
+use App\Repositories\WalletRepository;
 use App\Service\UserService;
+use App\Service\WalletService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +17,9 @@ class UserController extends Controller
     public function actionCreate(Request $request)
     {
         try {
-            $user = new UserService(new UserRepository());
+            $user = (new UserService(new UserRepository()))
+                ->setWalletService(new WalletService(new WalletRepository()))
+            ;
 
             $user->create($request);
 
