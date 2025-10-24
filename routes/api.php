@@ -14,6 +14,7 @@ Route::post('/api/cadastro', [UserController::class, 'actionCreate']);
 Route::post('/api/login', [AuthController::class, 'actionLogin']);
 
 Route::middleware('auth:api')->group(function () {
+    Route::get('/api/usuario', [UserController::class, 'actionUser']);
     Route::post('/api/logout', [AuthController::class, 'actionLogout']);
     Route::patch('/api/transferencia', [TransactionController::class, 'actionTransfer']);
 });

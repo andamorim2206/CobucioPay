@@ -50,4 +50,32 @@ class UserRepository implements UserRepositoryInterface
         return (new UserService(new UserRepository()))
             ->setId($userId);
     }
+
+    public function loadUser(string $token): UserService
+    {
+        $userData = \DB::table('user_tokens')
+            ->join('users', 'users.id', '=', 'user_tokens.user_id')
+            ->join('wallets', 'wallets.user_id', '=', 'users.id')
+            ->where('user_tokens.token', $token)
+            ->select(
+                'users.id as user_id',
+                'users.name',
+                'users.email',
+                'wallets.id as wallet_id',
+                'wallets.balance as wallet_balance'
+            )
+            ->first();
+
+        $wallet = (new WalletService(new WalletRepository()))
+            ->setId($userData->wallet_id)
+            ->setBalance($userData->wallet_balance)
+        ;
+        
+        return (new UserService(new UserRepository()))
+            ->setId($userData->user_id)
+            ->setName($userData->name)
+            ->setEmail($userData->email)
+            ->setWalletService($wallet)
+        ;
+    }
 }

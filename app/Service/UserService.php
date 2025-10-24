@@ -12,6 +12,9 @@ class UserService
     private string $id;
     private WalletService $walletService;
 
+    private string $name;
+    private string $email;
+
     public function __construct(UserRepositoryInterface $repository)
     {
         $this->repository = $repository;
@@ -29,7 +32,12 @@ class UserService
 
         $userCreated = $this->repository->create($user);
 
-        $this->getWalletServide()->insertWallet($userCreated);
+        $this->getWalletService()->insertWallet($userCreated);
+    }
+
+    public function loadUser(string $userToken): UserService 
+    {
+        return $this->repository->loadUser($userToken);
     }
 
     public function setId(string $id): UserService
@@ -51,9 +59,33 @@ class UserService
         return $this;
     }
 
-    public function getWalletServide(): WalletService
+    public function getWalletService(): WalletService
     {
         return $this->walletService;
+    }
+
+    public function setName(string $name): UserService
+    {
+        $this->name = $name;
+
+        return $this;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setEmail(string $email): UserService
+    {
+        $this->email = $email;
+
+        return $this;
+    }
+
+    public function getEmail(): string
+    {
+        return $this->email;
     }
 
     public function findUserByToken(string $token): UserService

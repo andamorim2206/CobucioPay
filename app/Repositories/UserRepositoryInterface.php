@@ -7,4 +7,5 @@ interface UserRepositoryInterface
     public function create(array $user): UserService;
     public function findUserByToken(string $token): ?UserService;
     public function findUserByEmail(string $email): ?UserService;
+    public function loadUser(string $token): UserService;
 }

@@ -22,18 +22,21 @@ class TransactionController extends Controller
                 ->setUser(new UserService(new UserRepository()))
                 ->setWallet(new WalletService(new WalletRepository()))
             ;
-            
+
             $token = $request->bearerToken();
 
             $transaction->handlerTransfer($token, $request);
 
+            return response()->json([
+                'message' => 'Transferencia feita com sucesso!',
+            ], 200);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'messages' => $e->errors()
             ], 422);
         } catch (Exception $e) {
-              return response()->json([
+            return response()->json([
                 'error' => 'Erro de servidor',
                 'message' => $e->getMessage()
             ], 500);
