@@ -7,4 +7,5 @@ interface TransactionRepositoryInterface
 {
     public function insertTransaction(TransactionService $transactionService): void;
     public function loadExtract(string $walletId): array;
+    public function findTransactionForReversal(string $walletId, string $transactionId): TransactionService;
 }

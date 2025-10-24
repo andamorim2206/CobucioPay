@@ -35,4 +35,14 @@ class WalletRepository implements WalletRepositoryInterface
             ->update(['balance' => $walletService->getBalance()])
         ;
     }
+
+    public function findWalletById(string $receiverId): WalletService
+    {
+         $record = Wallet::where('id', $receiverId)->lockForUpdate()->first();
+
+         return (new WalletService(new WalletRepository()))
+            ->setId($record->id)
+            ->setBalance($record->balance)
+        ;
+    }
 }

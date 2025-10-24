@@ -80,7 +80,8 @@ class TransactionService
             ->setSender($senderWallet->getId())
             ->setReceiver($receiverWallet->getId())
             ->setAmount($amount)
-            ->setType('transfer');
+            ->setType('transfer')
+        ;
 
         $this->repository->insertTransaction($this);
     }
@@ -91,9 +92,57 @@ class TransactionService
             ->setSender($senderWallet->getId())
             ->setReceiver($receiverWallet->getId())
             ->setAmount($amount)
-            ->setType('deposit');
+            ->setType('deposit')
+        ;
 
         $this->repository->insertTransaction($this);
+    }
+
+    public function handlerReversal(string $token, Request $request): void
+    {
+        $senderUser = $this->getUser()->findUserByToken($token);
+        $senderWallet = $this->getWallet()->loadWallets($senderUser->getId());
+
+        $transactionId = $request->input('transactionId');
+
+        // Transação original (quem enviou e quem recebeu)
+        $transaction = $this->repository->findTransactionForReversal($senderWallet->getId(), $transactionId);
+
+        // Carrega a wallet do receptor original (agora será o remetente do estorno)
+        $receiverWallet = $this->getWallet()->findWalletId($transaction->getReceiver());
+
+        $this->reversal($senderWallet, $receiverWallet, $transaction->getAmount());
+    }
+
+    public function reversal(WalletService $originalSenderWallet, WalletService $originalReceiverWallet, float $amount): void
+    {
+        \DB::transaction(function () use ($originalSenderWallet, $originalReceiverWallet, $amount) {
+            // Verifica se o recebedor original (de quem o valor vai sair agora) tem saldo suficiente
+            if ($originalReceiverWallet->getBalance() < $amount) {
+                throw ValidationException::withMessages([
+                    'balance' => 'Saldo insuficiente para estornar a transação.',
+                ]);
+            }
+
+            // Debita da wallet do receptor original
+            $newReceiverBalance = $originalReceiverWallet->getBalance() - $amount;
+            $originalReceiverWallet->setBalance($newReceiverBalance);
+            $originalReceiverWallet->updateWallet($originalReceiverWallet, $amount);
+
+            // Credita de volta na wallet do remetente original
+            $newSenderBalance = $originalSenderWallet->getBalance() + $amount;
+            $originalSenderWallet->setBalance($newSenderBalance);
+            $originalSenderWallet->updateWallet($originalSenderWallet, $amount);
+
+            // Cria o registro da transação de estorno
+            $this
+                ->setSender($originalReceiverWallet->getId())   // quem está devolvendo o dinheiro
+                ->setReceiver($originalSenderWallet->getId())   // quem está recebendo de volta
+                ->setAmount($amount)
+                ->setType('reversal');
+
+            $this->repository->insertTransaction($this);
+        });
     }
 
     public function loadExtract(string $token): array

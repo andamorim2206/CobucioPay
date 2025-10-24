@@ -38,6 +38,11 @@ class WalletService
         $this->repository->updateWallet($walletService, $amount);
     }
 
+    public function findWalletId(string $receiverId): WalletService
+    {
+        return $this->repository->findWalletById($receiverId);
+    }
+
      public function setUser(UserService $userService): self
     {
         $this->userService = $userService;

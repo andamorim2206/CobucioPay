@@ -90,4 +90,32 @@ class TransactionController extends Controller
             ], 500);
         }
     }
+
+    public function actionReversal(Request $request)
+    {
+        try {
+
+            $token = $request->bearerToken();
+
+            (new TransactionService(new TransactionRepository()))
+                ->setUser(new UserService(new UserRepository()))
+                ->setWallet(new WalletService(new WalletRepository()))
+                ->handlerReversal($token, $request);
+            ;
+
+             return response()->json([
+                'message' => 'Estorno feita com sucesso!',
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'messages' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Erro de servidor',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

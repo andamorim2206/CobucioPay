@@ -2,10 +2,10 @@
 
 namespace App\Repositories;
 
-use App\Models\Transaction;
 use App\Service\TransactionService;
 use App\Repositories\TransactionRepositoryInterface;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class TransactionRepository implements TransactionRepositoryInterface
 {
@@ -45,6 +45,31 @@ class TransactionRepository implements TransactionRepositoryInterface
         }
 
         return $transactions;
+    }
+
+    public function findTransactionForReversal(string $walletId, string $transactionId): TransactionService
+    {
+        $row = \DB::table('transactions')
+            ->select('id', 'type', 'sender_wallet_id', 'receiver_wallet_id', 'amount', 'status')
+            ->where('sender_wallet_id', $walletId)
+            ->where('id', $transactionId)
+            ->where('type', 'transfer')
+            ->first()
+        ;
+        if (!$row) {
+            throw ValidationException::withMessages([
+                'email' => 'Transaction não encontrada.',
+            ]);
+        }
+
+        return (new TransactionService(new TransactionRepository()))
+            ->setId($row->id)
+            ->setType($row->type)
+            ->setSender($row->sender_wallet_id)
+            ->setReceiver($row->receiver_wallet_id)
+            ->setAmount($row->amount)
+            ->setStatus($row->status)
+        ;
     }
 
 }

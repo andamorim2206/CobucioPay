@@ -11,4 +11,6 @@ interface WalletRepositoryInterface
     public function loadWallets(string $userId): WalletService;
 
     public function updateWallet(WalletService $walletService, float $amount): void;
+
+     public function findWalletById(string $receiverId): WalletService;
 }
