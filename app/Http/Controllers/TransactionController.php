@@ -42,4 +42,52 @@ class TransactionController extends Controller
             ], 500);
         }
     }
+
+    public function actionExtract(Request $request)
+    {
+        try {
+            $transactionService = (new TransactionService(new TransactionRepository()))
+                ->setUser(new UserService(new UserRepository()))
+                ->setWallet(new WalletService(new WalletRepository()));
+
+            $token = $request->bearerToken();
+
+            $extract = $transactionService->loadExtract($token);
+
+            if (!$extract || count($extract) === 0) {
+                return response()->json([
+                    'message' => 'Nenhuma transação encontrada.',
+                    'data' => []
+                ], 200);
+            }
+
+            $data = [];
+            foreach ($extract as $tx) {
+                $data[] = [
+                    'id' => $tx->getId(),
+                    'type' => $tx->getType(),
+                    'amount' => $tx->getAmount(),
+                    'status' => $tx->getStatus(),
+                    'sender_wallet_id' => $tx->getSender(),
+                    'receiver_wallet_id' => $tx->getReceiver(),
+                ];
+            }
+
+            return response()->json([
+                'message' => 'Extrato carregado com sucesso!',
+                'total' => count($data),
+                'transactions' => $data
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'messages' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Erro de servidor',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

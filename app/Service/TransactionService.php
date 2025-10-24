@@ -18,6 +18,9 @@ class TransactionService
     private float $amount = 0;
     private string $sender;
     private string $receiver;
+    private string $id;
+
+    private string $status;
 
 
     public function __construct(TransactionRepositoryInterface $repository)
@@ -93,6 +96,13 @@ class TransactionService
         $this->repository->insertTransaction($this);
     }
 
+    public function loadExtract(string $token): array
+    {
+        $user = $this->getUser()->findUserByToken($token);
+        $wallet = $this->getWallet()->loadWallets($user->getId());
+
+        return $this->repository->loadExtract($wallet->getId());
+    }
 
     public function setUser(UserService $userService): self
     {
@@ -130,6 +140,18 @@ class TransactionService
         return $this->type;
     }
 
+    public function setStatus(string $status): self
+    {
+        $this->status = $status;
+
+        return $this;
+    }
+
+    public function getStatus(): string
+    {
+        return $this->status;
+    }
+
     public function setAmount(float $amount): self
     {
         $this->amount = $amount;
@@ -164,5 +186,17 @@ class TransactionService
     public function getReceiver(): string
     {
         return $this->receiver;
+    }
+
+    public function setId(string $id): self
+    {
+        $this->id = $id;
+
+        return $this;
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
     }
 }

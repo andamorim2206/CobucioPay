@@ -5,5 +5,6 @@ use App\Service\TransactionService;
 
 interface TransactionRepositoryInterface 
 {
-    public function insertTransaction(TransactionService $transactionService): void;   
+    public function insertTransaction(TransactionService $transactionService): void;
+    public function loadExtract(string $walletId): array;
 }
