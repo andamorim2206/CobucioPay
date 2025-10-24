@@ -8,7 +8,9 @@ class WalletService
     protected WalletRepositoryInterface $repository;
     private UserService $userService;
     private string $id;
-    private string $balance;
+    private float $balance;
+
+     private float $transferValue = 0;
 
 
     public function __construct(WalletRepositoryInterface $repository)
@@ -29,7 +31,11 @@ class WalletService
     public function loadWallets(string $userId)
     {
         return $this->repository->loadWallets($userId);
+    }
 
+    public function updateWallet(WalletService $walletService, float $amount): void
+    {
+        $this->repository->updateWallet($walletService, $amount);
     }
 
      public function setUser(UserService $userService): self
@@ -56,15 +62,27 @@ class WalletService
         return $this->id;
     }
 
-    public function setBalance(string $balance): self
+    public function setBalance(float $balance): self
     {
         $this->balance = $balance;
 
         return $this;
     }
 
-    public function getBalance(): string
+    public function getBalance(): float
     {
         return $this->balance;
+    }
+
+     public function setTransferValue(float $transferValue): self
+    {
+        $this->transferValue = $transferValue;
+
+        return $this;
+    }
+
+    public function getTransferValue(): float
+    {
+        return $this->transferValue;
     }
 }

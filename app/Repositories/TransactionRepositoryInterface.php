@@ -1,7 +1,9 @@
 <?php 
 namespace App\Repositories;
 
+use App\Service\TransactionService;
+
 interface TransactionRepositoryInterface 
 {
-    public function transfer(): void;   
+    public function insertTransaction(TransactionService $transactionService): void;   
 }

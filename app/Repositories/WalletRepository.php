@@ -27,4 +27,12 @@ class WalletRepository implements WalletRepositoryInterface
             ->setUser($user)
         ;
     }
+
+    public function updateWallet(WalletService $walletService, float $amount): void
+    {
+        \DB::table('wallets')
+            ->where('id', $walletService->getId())
+            ->update(['balance' => $walletService->getBalance()])
+        ;
+    }
 }

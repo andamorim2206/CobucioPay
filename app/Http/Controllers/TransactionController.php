@@ -25,7 +25,7 @@ class TransactionController extends Controller
             
             $token = $request->bearerToken();
 
-            $transaction->transfer($token, $request);
+            $transaction->handlerTransfer($token, $request);
 
 
         } catch (ValidationException $e) {

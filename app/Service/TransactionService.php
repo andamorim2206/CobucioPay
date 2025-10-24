@@ -14,25 +14,35 @@ class TransactionService
 
     private WalletService $walletService;
 
+    private string $type;
+    private float $amount = 0;
+    private string $sender;
+    private string $receiver;
+
+
     public function __construct(TransactionRepositoryInterface $repository)
     {
         $this->repository = $repository;
     }
 
-    public function transfer(string $token, Request $request)
+    public function handlerTransfer(string $token, Request $request)
     {
-        $senderUserId = $this->getUser()->findUserByToken($token);
+        $senderUser = $this->getUser()->findUserByToken($token);
+        $receiverUser = $this->getUser()->findUserByEmail($request->input('email'));
 
-        $receiverUserId = $this->getUser()->findUserByEmail($request->input('email'));
-
-        if ($senderUserId->getId() === $receiverUserId->getId()) {
+        if ($senderUser->getId() === $receiverUser->getId()) {
             throw ValidationException::withMessages([
                 'email' => 'Você não pode transferir dinheiro para si mesmo.',
             ]);
         }
 
-        $senderWallet = $this->getWallet()->loadWallets($senderUserId->getId());
-        $receiverWallet = $this->getWallet()->loadWallets($receiverUserId->getId());
+        $amount = (float) $request->input('amount', 0);
+        if ($amount <= 0) {
+            throw ValidationException::withMessages(['amount' => 'Valor inválido.']);
+        }
+
+        $senderWallet = $this->getWallet()->loadWallets($senderUser->getId());
+        $receiverWallet = $this->getWallet()->loadWallets($receiverUser->getId());
 
         if (!$senderWallet) {
             throw ValidationException::withMessages(['sender' => 'Carteira do remetente não encontrada.']);
@@ -41,7 +51,48 @@ class TransactionService
             throw ValidationException::withMessages(['receiver' => 'Carteira do destinatário não encontrada.']);
         }
 
+        \DB::transaction(function () use ($senderWallet, $receiverWallet, $senderUser, $receiverUser, $amount) {
+            if ($senderWallet->getBalance() < $amount) {
+                throw ValidationException::withMessages([
+                    'balance' => 'Saldo insuficiente para realizar a transferência.',
+                ]);
+            }
+
+            $valuePaid = $senderWallet->getBalance() - $amount;
+            $senderWallet->setBalance($valuePaid);
+
+            $valueAdd = $receiverWallet->getBalance() + $amount;
+            $receiverWallet->setBalance($valueAdd);
+
+            $this->transfer($senderWallet, $receiverWallet, $amount);
+            $senderWallet->updateWallet($senderWallet, $amount);
+            $this->deposit($senderWallet, $receiverWallet, $amount);
+            $receiverWallet->updateWallet($receiverWallet, $amount);
+        });
     }
+
+    public function transfer(WalletService $senderWallet, WalletService $receiverWallet, float $amount): void
+    {
+        $this
+            ->setSender($senderWallet->getId())
+            ->setReceiver($receiverWallet->getId())
+            ->setAmount($amount)
+            ->setType('transfer');
+
+        $this->repository->insertTransaction($this);
+    }
+
+    public function deposit(WalletService $senderWallet, WalletService $receiverWallet, float $amount): void
+    {
+        $this
+            ->setSender($senderWallet->getId())
+            ->setReceiver($receiverWallet->getId())
+            ->setAmount($amount)
+            ->setType('deposit');
+
+        $this->repository->insertTransaction($this);
+    }
+
 
     public function setUser(UserService $userService): self
     {
@@ -65,5 +116,53 @@ class TransactionService
     public function getWallet(): WalletService
     {
         return $this->walletService;
+    }
+
+    public function setType(string $type): self
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function setAmount(float $amount): self
+    {
+        $this->amount = $amount;
+
+        return $this;
+    }
+
+    public function getAmount(): float
+    {
+        return $this->amount;
+    }
+
+    public function setSender(string $sender): self
+    {
+        $this->sender = $sender;
+
+        return $this;
+    }
+
+    public function getSender(): string
+    {
+        return $this->sender;
+    }
+
+    public function setReceiver(string $receiver): self
+    {
+        $this->receiver = $receiver;
+
+        return $this;
+    }
+
+    public function getReceiver(): string
+    {
+        return $this->receiver;
     }
 }
