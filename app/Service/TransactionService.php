@@ -16,9 +16,11 @@ class TransactionService
 
     private string $type;
     private float $amount = 0;
-    private string $sender;
-    private string $receiver;
+    private ?string $sender;
+    private ?string $receiver;
     private string $id;
+
+    private bool $isReversal = false;
 
     private string $status;
 
@@ -78,7 +80,7 @@ class TransactionService
     {
         $this
             ->setSender($senderWallet->getId())
-            ->setReceiver($receiverWallet->getId())
+            ->setReceiver(null)
             ->setAmount($amount)
             ->setType('transfer')
         ;
@@ -89,7 +91,7 @@ class TransactionService
     public function deposit(WalletService $senderWallet, WalletService $receiverWallet, float $amount): void
     {
         $this
-            ->setSender($senderWallet->getId())
+            ->setSender(null)
             ->setReceiver($receiverWallet->getId())
             ->setAmount($amount)
             ->setType('deposit')
@@ -101,47 +103,47 @@ class TransactionService
     public function handlerReversal(string $token, Request $request): void
     {
         $senderUser = $this->getUser()->findUserByToken($token);
+        $receiverUser = $this->getUser()->findUserByEmail($request->input('email'));
+        
         $senderWallet = $this->getWallet()->loadWallets($senderUser->getId());
+        $receiverWallet = $this->getWallet()->loadWallets($receiverUser->getId());
 
         $transactionId = $request->input('transactionId');
 
-        // Transação original (quem enviou e quem recebeu)
+        $this->repository->isTransactionReversal();
+
         $transaction = $this->repository->findTransactionForReversal($senderWallet->getId(), $transactionId);
 
-        // Carrega a wallet do receptor original (agora será o remetente do estorno)
-        $receiverWallet = $this->getWallet()->findWalletId($transaction->getReceiver());
-
-        $this->reversal($senderWallet, $receiverWallet, $transaction->getAmount());
+        $this->reversal($senderWallet, $receiverWallet, $transaction->getAmount(), $transactionId);
     }
 
-    public function reversal(WalletService $originalSenderWallet, WalletService $originalReceiverWallet, float $amount): void
+    public function reversal(WalletService $originalSenderWallet, WalletService $originalReceiverWallet, float $amount, string $transactionId): void
     {
-        \DB::transaction(function () use ($originalSenderWallet, $originalReceiverWallet, $amount) {
-            // Verifica se o recebedor original (de quem o valor vai sair agora) tem saldo suficiente
+        \DB::transaction(function () use ($originalSenderWallet, $originalReceiverWallet, $amount, $transactionId) {
             if ($originalReceiverWallet->getBalance() < $amount) {
                 throw ValidationException::withMessages([
                     'balance' => 'Saldo insuficiente para estornar a transação.',
                 ]);
             }
 
-            // Debita da wallet do receptor original
             $newReceiverBalance = $originalReceiverWallet->getBalance() - $amount;
             $originalReceiverWallet->setBalance($newReceiverBalance);
             $originalReceiverWallet->updateWallet($originalReceiverWallet, $amount);
 
-            // Credita de volta na wallet do remetente original
             $newSenderBalance = $originalSenderWallet->getBalance() + $amount;
             $originalSenderWallet->setBalance($newSenderBalance);
             $originalSenderWallet->updateWallet($originalSenderWallet, $amount);
 
-            // Cria o registro da transação de estorno
             $this
-                ->setSender($originalReceiverWallet->getId())   // quem está devolvendo o dinheiro
-                ->setReceiver($originalSenderWallet->getId())   // quem está recebendo de volta
+                ->setSender($originalReceiverWallet->getId())
+                ->setReceiver($originalSenderWallet->getId())
                 ->setAmount($amount)
-                ->setType('reversal');
+                ->setType('reversal')
+            ;
 
             $this->repository->insertTransaction($this);
+
+            $this->repository->updateIsReversal($transactionId);
         });
     }
 
@@ -213,26 +215,26 @@ class TransactionService
         return $this->amount;
     }
 
-    public function setSender(string $sender): self
+    public function setSender(?string $sender): self
     {
         $this->sender = $sender;
 
         return $this;
     }
 
-    public function getSender(): string
+    public function getSender(): ?string
     {
         return $this->sender;
     }
 
-    public function setReceiver(string $receiver): self
+    public function setReceiver(?string $receiver): self
     {
         $this->receiver = $receiver;
 
         return $this;
     }
 
-    public function getReceiver(): string
+    public function getReceiver(): ?string
     {
         return $this->receiver;
     }
@@ -247,5 +249,17 @@ class TransactionService
     public function getId(): string
     {
         return $this->id;
+    }
+
+    public function setIsReversal(bool $isReversal): self
+    {
+        $this->isReversal = $isReversal;
+
+        return $this;
+    }
+
+    public function isReversal(): string
+    {
+        return $this->isReversal;
     }
 }

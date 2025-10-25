@@ -40,6 +40,11 @@ class UserService
         return $this->repository->loadUser($userToken);
     }
 
+    public function loadAllUser(): array
+    {
+        return $this->repository->loadAllUsers();
+    }
+
     public function setId(string $id): UserService
     {
         $this->id = $id;

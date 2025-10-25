@@ -83,4 +83,40 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function actionLoadAllUsers(Request $request)
+    {
+        try {
+
+            $token = $request->bearerToken();
+
+            $users = (new UserService(new UserRepository()))
+                ->setWalletService(new WalletService(new WalletRepository()))
+                ->loadAllUser()
+            ;
+
+            $data = [];
+            foreach ($users as $user) {
+                $data[] = [
+                    'id' => $user->getId(),
+                    'name' => $user->getName(),
+                    'email' => $user->getEmail(),
+                ];
+            }
+            return response()->json([
+                'user' => $data
+            ], 200);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'error' => 'Erro de validação',
+                'details' => $e->errors(),
+            ], 422);
+        } catch (Exception $e) {
+            return response()->json([
+                'error' => 'Erro ao cadastrar usuário',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

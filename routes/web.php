@@ -10,6 +10,9 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 });
 
+Route::get('/transfer', function () {
+    return view('transfer');
+});
 
 Route::get('/register', function () {
     return view('register');

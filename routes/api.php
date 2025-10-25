@@ -15,6 +15,7 @@ Route::post('/api/login', [AuthController::class, 'actionLogin']);
 
 Route::middleware('auth:api')->group(function () {
     Route::get('/api/usuario', [UserController::class, 'actionUser']);
+    Route::get('/api/usuarios', [UserController::class, 'actionLoadAllUsers']);
     Route::post('/api/logout', [AuthController::class, 'actionLogout']);
     Route::patch('/api/transferencia', [TransactionController::class, 'actionTransfer']);
     Route::patch('/api/estorno', [TransactionController::class, 'actionReversal']);

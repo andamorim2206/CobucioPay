@@ -2,8 +2,10 @@
 
 namespace App\Repositories;
 
+use App\Models\Transaction;
 use App\Service\TransactionService;
 use App\Repositories\TransactionRepositoryInterface;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -18,16 +20,18 @@ class TransactionRepository implements TransactionRepositoryInterface
             'receiver_wallet_id' => $transactionService->getReceiver() ?? null,
             'amount' => $transactionService->getAmount(),
             'status' => 'completed',
+            'created_at' => now(),
         ]);
     }
 
     public function loadExtract(string $walletId): array
     {
         $rows = \DB::table('transactions')
-            ->select('id', 'type', 'sender_wallet_id', 'receiver_wallet_id', 'amount', 'status')
+            ->select('id', 'type', 'sender_wallet_id', 'receiver_wallet_id', 'amount', 'status', 'created_at')
             ->where('sender_wallet_id', $walletId)
             ->orWhere('receiver_wallet_id', $walletId)
-            ->get(); // retorna coleção de stdClass
+            ->orderBy('created_at', 'desc')
+            ->get();
 
 
         $transactions = [];
@@ -72,4 +76,24 @@ class TransactionRepository implements TransactionRepositoryInterface
         ;
     }
 
+    public function updateIsReversal(string $transactionId): void
+    {
+        $test2 = \DB::table('transactions')->where('id', $transactionId)->update(['is_reversal' => true]);
+    } 
+
+    public function isTransactionReversal(): void
+    {
+        $row = \DB::table('transactions')
+            ->where('is_reversal', 1)
+            ->exists()
+        ;
+
+
+        if ($row) {
+            throw ValidationException::withMessages([
+                'messagem' => 'Estorno feito nessa transaction.',
+            ]);
+        }
+
+    }
 }

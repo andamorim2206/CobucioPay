@@ -12,7 +12,8 @@ class Transaction extends Model
         'sender_wallet_id',
         'receiver_wallet_id',
         'amount',
-        'status'
+        'status',
+        'is_reversal',
     ];
 
     public function senderWallet(): BelongsTo

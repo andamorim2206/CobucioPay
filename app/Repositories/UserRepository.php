@@ -70,12 +70,33 @@ class UserRepository implements UserRepositoryInterface
             ->setId($userData->wallet_id)
             ->setBalance($userData->wallet_balance)
         ;
-        
+
         return (new UserService(new UserRepository()))
             ->setId($userData->user_id)
             ->setName($userData->name)
             ->setEmail($userData->email)
             ->setWalletService($wallet)
         ;
+    }
+
+    public function loadAllUsers(): array
+    {
+        $rows = \DB::table('users')
+            ->select('id', 'name', 'email')
+            ->get()
+        ;
+
+        $usersData = [];
+
+        foreach ($rows as $row) {
+            $user = new UserService(new UserRepository());
+            $user->setId($row->id);
+            $user->setName($row->name);
+            $user->setEmail($row->email);
+
+            $usersData[] = $user;
+        }
+
+        return $usersData;
     }
 }

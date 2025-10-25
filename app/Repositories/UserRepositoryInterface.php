@@ -8,4 +8,5 @@ interface UserRepositoryInterface
     public function findUserByToken(string $token): ?UserService;
     public function findUserByEmail(string $email): ?UserService;
     public function loadUser(string $token): UserService;
+    public function loadAllUsers(): array;
 }

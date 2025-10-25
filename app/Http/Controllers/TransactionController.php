@@ -94,7 +94,6 @@ class TransactionController extends Controller
     public function actionReversal(Request $request)
     {
         try {
-
             $token = $request->bearerToken();
 
             (new TransactionService(new TransactionRepository()))
