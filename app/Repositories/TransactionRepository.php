@@ -20,6 +20,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             'receiver_wallet_id' => $transactionService->getReceiver() ?? null,
             'amount' => $transactionService->getAmount(),
             'status' => 'completed',
+            'user_id' => $transactionService->getUserIdReceive() ?? null,
             'created_at' => now(),
         ]);
     }
@@ -27,7 +28,7 @@ class TransactionRepository implements TransactionRepositoryInterface
     public function loadExtract(string $walletId): array
     {
         $rows = \DB::table('transactions')
-            ->select('id', 'type', 'sender_wallet_id', 'receiver_wallet_id', 'amount', 'status', 'created_at')
+            ->select('id', 'type', 'sender_wallet_id', 'receiver_wallet_id', 'amount', 'status', 'created_at', 'user_id')
             ->where('sender_wallet_id', $walletId)
             ->orWhere('receiver_wallet_id', $walletId)
             ->orderBy('created_at', 'desc')
@@ -44,6 +45,7 @@ class TransactionRepository implements TransactionRepositoryInterface
             $tx->setReceiver($row->receiver_wallet_id);
             $tx->setAmount($row->amount);
             $tx->setStatus($row->status);
+            $tx->setUserIdReceive($row->user_id);
 
             $transactions[] = $tx;
         }
@@ -81,13 +83,13 @@ class TransactionRepository implements TransactionRepositoryInterface
         $test2 = \DB::table('transactions')->where('id', $transactionId)->update(['is_reversal' => true]);
     } 
 
-    public function isTransactionReversal(): void
+    public function isTransactionReversal(string $transactionId): void
     {
         $row = \DB::table('transactions')
             ->where('is_reversal', 1)
+            ->where('id', $transactionId)
             ->exists()
         ;
-
 
         if ($row) {
             throw ValidationException::withMessages([

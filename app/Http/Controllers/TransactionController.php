@@ -70,6 +70,7 @@ class TransactionController extends Controller
                     'status' => $tx->getStatus(),
                     'sender_wallet_id' => $tx->getSender(),
                     'receiver_wallet_id' => $tx->getReceiver(),
+                    'user_receiver_id' => $tx->getUserIdReceive(),
                 ];
             }
 

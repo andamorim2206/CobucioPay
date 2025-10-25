@@ -19,10 +19,9 @@ class TransactionService
     private ?string $sender;
     private ?string $receiver;
     private string $id;
-
     private bool $isReversal = false;
-
     private string $status;
+    private ?string $userIdReceiver;
 
 
     public function __construct(TransactionRepositoryInterface $repository)
@@ -69,18 +68,19 @@ class TransactionService
             $valueAdd = $receiverWallet->getBalance() + $amount;
             $receiverWallet->setBalance($valueAdd);
 
-            $this->transfer($senderWallet, $receiverWallet, $amount);
+            $this->transfer($senderWallet, $receiverUser, $amount);
             $senderWallet->updateWallet($senderWallet, $amount);
             $this->deposit($senderWallet, $receiverWallet, $amount);
             $receiverWallet->updateWallet($receiverWallet, $amount);
         });
     }
 
-    public function transfer(WalletService $senderWallet, WalletService $receiverWallet, float $amount): void
+    public function transfer(WalletService $senderWallet, UserService $receiverUser, float $amount): void
     {
         $this
             ->setSender($senderWallet->getId())
             ->setReceiver(null)
+            ->setUserIdReceive($receiverUser->getId())
             ->setAmount($amount)
             ->setType('transfer')
         ;
@@ -103,14 +103,13 @@ class TransactionService
     public function handlerReversal(string $token, Request $request): void
     {
         $senderUser = $this->getUser()->findUserByToken($token);
-        $receiverUser = $this->getUser()->findUserByEmail($request->input('email'));
         
         $senderWallet = $this->getWallet()->loadWallets($senderUser->getId());
-        $receiverWallet = $this->getWallet()->loadWallets($receiverUser->getId());
+        $receiverWallet = $this->getWallet()->loadWallets($request->input('user_receiver_id'));
 
         $transactionId = $request->input('transactionId');
 
-        $this->repository->isTransactionReversal();
+        $this->repository->isTransactionReversal($transactionId);
 
         $transaction = $this->repository->findTransactionForReversal($senderWallet->getId(), $transactionId);
 
@@ -137,6 +136,7 @@ class TransactionService
             $this
                 ->setSender($originalReceiverWallet->getId())
                 ->setReceiver($originalSenderWallet->getId())
+                ->setUserIdReceive(null)
                 ->setAmount($amount)
                 ->setType('reversal')
             ;
@@ -262,4 +262,17 @@ class TransactionService
     {
         return $this->isReversal;
     }
+
+    public function setUserIdReceive(?string $userIdReceiver): self
+    {
+        $this->userIdReceiver = $userIdReceiver;
+
+        return $this;
+    }
+
+    public function getUserIdReceive(): ?string
+    {
+        return $this->userIdReceiver;
+    }
+
 }

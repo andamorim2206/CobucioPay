@@ -242,7 +242,7 @@
                             <span class="valor ${tipoClasse}">R$ ${tx.amount}</span>
                             <span>Status: ${tx.status}</span>
                         </div>
-                        ${tx.type === 'transfer' ? `<button class="estornar-btn" onclick="estornar('${tx.id}')">Estornar</button>` : ''}
+                        ${tx.type === 'transfer' ? `<button class="estornar-btn" onclick="estornar('${tx.id}', '${tx.user_receiver_id}')">Estornar</button>` : ''}
                     `;
 
                     container.appendChild(div);
@@ -253,16 +253,20 @@
             }
         }
 
-        async function estornar(id) {
+        async function estornar(transactionId, userReceiverId) {
             if (!confirm('Deseja realmente estornar essa transferência?')) return;
 
             try {
-                const res = await fetch(`/api/estorno/${id}`, {
-                    method: 'POST',
+                const res = await fetch('/api/estorno', {
+                    method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({
+                        transactionId: transactionId,
+                        user_receiver_id: userReceiverId
+                    })
                 });
 
                 const data = await res.json();
@@ -308,10 +312,9 @@
         });
 
         document.getElementById('btnUsuarios').addEventListener('click', () => {
-            window.location.href = '/usuarios';
+            window.location.href = '/users';
         });
 
-        // Inicializa ao abrir a tela
         carregarUsuario();
         carregarExtrato();
     </script>
