@@ -16,7 +16,7 @@ Suba os container
         docker-compose up -d --build
 Acessar o container
 
-        docker exec -it laravel_app bash
+        docker exec -it app_template bash
 Instalar as Dependencias(dentro container)
 
         composer install
